@@ -1,0 +1,17 @@
+data:
+  processed_catalog: data/processed/restaurants.parquet
+  cost_min_valid: 100
+
+filter:
+  max_shortlist_candidates: 40
+  chain_max_per_name: 2
+  relax_rating_by: 0.5
+  thin_locality_threshold: 3
+
+llm:
+  model: llama-3.1-8b-instant
+  temperature: 0.3
+  max_tokens: 1200
+  top_k_results: 5
+  timeout_seconds: 15
+  prompt_version: v1
