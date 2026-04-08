@@ -1,8 +1,13 @@
 // ── BiteAI API Client ──────────────────────────────────────────────
 // Typed fetch wrappers for the FastAPI backend
 
+const ENV_API_URL = process.env.NEXT_PUBLIC_API_URL?.trim();
+
 export const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  ENV_API_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://zomato-oai.streamlit.app'
+    : 'http://localhost:8000');
 
 // ── Types ─────────────────────────────────────────────────────────
 
