@@ -14,7 +14,8 @@ streamlit run streamlit_app.py
 1. Push this repo to GitHub.
 2. In Streamlit Cloud, create a new app from this repo.
 3. Set main file path to:
-   - `streamlit_app.py`
+   - `https://zomato-oai.streamlit.app`
+   - `zomato-oai.vercel.app`
 4. (Optional, for LLM ranking) add secret/env var:
    - `GROQ_API_KEY=<your_key>`
 
@@ -34,7 +35,7 @@ This repo includes `render.yaml` for one-click API deployment.
 
 Expected API base URL:
 
-- `https://<your-render-service>.onrender.com`
+- `https://zomato-fastapi.onrender.com`
 
 Quick checks:
 
