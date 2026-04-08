@@ -7,6 +7,7 @@ venv/
 data/raw/
 # debug and scratch files
 *.txt
+!requirements.txt
 debug_*.py
 test_*.txt
 raw_output.txt
