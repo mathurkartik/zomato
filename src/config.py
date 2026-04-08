@@ -4,7 +4,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
+try:
+    import yaml
+except ModuleNotFoundError:  # pragma: no cover - runtime fallback for constrained deploy envs
+    yaml = None
 
 
 @dataclass(frozen=True)
@@ -46,11 +49,39 @@ def _resolve_paths(base: Path, raw: dict[str, Any]) -> dict[str, Any]:
     return {**raw, "data": data}
 
 
+def _default_raw_config() -> dict[str, Any]:
+    return {
+        "data": {
+            "processed_catalog": "data/processed/restaurants.parquet",
+            "cost_min_valid": 100,
+        },
+        "filter": {
+            "max_shortlist_candidates": 40,
+            "chain_max_per_name": 2,
+            "relax_rating_by": 0.5,
+            "thin_locality_threshold": 3,
+        },
+        "llm": {
+            "model": "llama-3.1-8b-instant",
+            "temperature": 0.3,
+            "max_tokens": 1200,
+            "top_k_results": 5,
+            "timeout_seconds": 15,
+            "prompt_version": "v1",
+        },
+    }
+
+
 def load_config(path: str | Path | None = None) -> AppConfig:
     base = Path(__file__).resolve().parent.parent
     cfg_path = Path(path) if path else base / "config.yaml"
-    with open(cfg_path, encoding="utf-8") as f:
-        raw = yaml.safe_load(f)
+    raw: dict[str, Any]
+    if yaml is None:
+        # Streamlit/CI fallback when PyYAML is unavailable.
+        raw = _default_raw_config()
+    else:
+        with open(cfg_path, encoding="utf-8") as f:
+            raw = yaml.safe_load(f)
     raw = _resolve_paths(base, raw)
     d = raw["data"]
     f = raw["filter"]
