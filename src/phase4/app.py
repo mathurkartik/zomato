@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 import pandas as pd
-from fastapi import FastAPI
+from fastapi import FastAPI, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from src.core.ab_testing import get_ab_manager
+from src.core.feedback import FeedbackRequest, FeedbackSummary, compute_summary, store_feedback
 from src.phase2.catalog_loader import (
     get_catalog_filters,
     get_cuisine_counts_for_locality,
@@ -168,7 +171,10 @@ def create_app() -> FastAPI:
         )
 
     @app.post("/api/v1/recommend", response_model=RecommendationResponse)
-    def recommend_endpoint(body: RecommendationRequest) -> RecommendationResponse:
+    def recommend_endpoint(
+        body: RecommendationRequest,
+        x_session_id: str | None = Header(default=None),
+    ) -> RecommendationResponse:
         catalog = getattr(app.state, "catalog", None)
         if catalog is None:
             return RecommendationResponse(
@@ -190,8 +196,46 @@ def create_app() -> FastAPI:
                     error="catalog_not_loaded",
                 ),
             )
+
+        session_id = x_session_id or uuid.uuid4().hex
+        ab_manager = get_ab_manager()
+        flag_overrides = ab_manager.get_flag_overrides(session_id)
+        ab_manager.log_all_assignments(session_id)
+
         prefs = body
-        return recommend(prefs=prefs, catalog=catalog)
+        return recommend(
+            prefs=prefs,
+            catalog=catalog,
+            flag_overrides=flag_overrides,
+            session_id=session_id,
+        )
+
+    @app.post("/api/feedback")
+    def feedback_endpoint(
+        body: FeedbackRequest,
+        x_session_id: str | None = Header(default=None),
+    ) -> dict[str, Any]:
+        session_id = x_session_id or body.session_id
+        ab_manager = get_ab_manager()
+        variant_info: dict[str, str] = {}
+        for exp_name, exp in ab_manager.experiments.items():
+            if not exp.enabled:
+                continue
+            variant = ab_manager.assign_variant(session_id, exp_name)
+            if variant:
+                variant_info[exp_name] = variant
+        entry = store_feedback(body, variant_info=variant_info if variant_info else None)
+        return {"status": "ok", "entry": entry}
+
+    @app.get("/api/feedback/summary")
+    def feedback_summary_endpoint() -> dict[str, Any]:
+        summary = compute_summary()
+        return summary.model_dump()
+
+    @app.get("/api/ab/results")
+    def ab_results_endpoint() -> dict[str, Any]:
+        ab_manager = get_ab_manager()
+        return {"experiments": ab_manager.read_results()}
 
     @app.get("/")
     def index() -> JSONResponse:

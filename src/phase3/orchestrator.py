@@ -5,11 +5,13 @@ import json
 import logging
 import re as _re
 import time
+import uuid
 from typing import Any
 
 import pandas as pd
 
 from src.config import load_config
+from src.core.feature_flags import get_flag
 from src.phase2.filter import FilterMeta, FilterResult, filter_restaurants
 from src.phase2.preferences import UserPreferences
 from src.phase3.intent_parser import detect_intent
@@ -238,12 +240,23 @@ def _prioritize_primary_cuisine_then_rating(
     return sorted(items, key=key)
 
 
-def recommend(*, prefs: UserPreferences, catalog: pd.DataFrame) -> RecommendationResponse:
+def recommend(
+    *,
+    prefs: UserPreferences,
+    catalog: pd.DataFrame,
+    flag_overrides: dict[str, bool] | None = None,
+    session_id: str | None = None,
+) -> RecommendationResponse:
     """
     Phase 2 filter → (Phase 3 LLM) → merge → safe fallback.
     This function must never raise for Groq failures.
     """
     t0 = time.perf_counter()
+
+    def _flag(name: str, default: bool = False) -> bool:
+        if flag_overrides and name in flag_overrides:
+            return flag_overrides[name]
+        return get_flag(name, default)
 
     user_query: str | None = getattr(prefs, "specific_cravings", None) or getattr(prefs, "query", None)
     detected_scenario: str | None = getattr(prefs, "scenario", None)
@@ -319,9 +332,8 @@ def recommend(*, prefs: UserPreferences, catalog: pd.DataFrame) -> Recommendatio
 
     # Cache
     key = _cache_key(prefs_effective, scenario=detected_scenario, user_query=user_query)
-    if key in _cache:
+    if _flag("cache_enabled", True) and key in _cache:
         cached = _cache[key]
-        # Ensure cache_hit is correct on repeated calls.
         elapsed = int((time.perf_counter() - t0) * 1000)
         return cached.model_copy(update={"meta": cached.meta.model_copy(update={"cache_hit": True, "latency_ms": elapsed})})
 
@@ -400,20 +412,24 @@ def recommend(*, prefs: UserPreferences, catalog: pd.DataFrame) -> Recommendatio
     tokens_used: int | None = None
     latency_ms: int = 0
 
+    use_llm = _flag("llm_reranking", True)
+
     api_key = ""
-    try:
-        api_key = get_groq_api_key()
-    except Exception as e:  # noqa: BLE001
-        # If API key missing, skip LLM and fallback.
-        error = str(e)
+    if use_llm:
+        try:
+            api_key = get_groq_api_key()
+        except Exception as e:  # noqa: BLE001
+            error = str(e)
+            fallback_used = True
+            llm_used = False
+            api_key = ""
+    else:
         fallback_used = True
-        llm_used = False
-        api_key = ""
 
     accepted_recommendations: list[dict[str, Any]] = []
     summary_text = ""
 
-    if api_key:
+    if use_llm and api_key:
         model_to_use = validate_or_fallback_model(llm_cfg.model)
 
         # Retry once for any Groq-level failure.
@@ -604,7 +620,10 @@ def recommend(*, prefs: UserPreferences, catalog: pd.DataFrame) -> Recommendatio
 
     rejected_items = _build_rejected_list(shortlist_items, reranked_items)
 
+    rec_id = f"rec_{uuid.uuid4().hex[:12]}"
+
     resp = RecommendationResponse(
+        recommendation_id=rec_id,
         summary=summary_text,
         items=reranked_items,
         rejected=rejected_items,
@@ -626,7 +645,8 @@ def recommend(*, prefs: UserPreferences, catalog: pd.DataFrame) -> Recommendatio
         ),
     )
 
-    _cache[key] = resp
+    if _flag("cache_enabled", True):
+        _cache[key] = resp
 
     try:
         _monitor_logger.info(

@@ -61,6 +61,7 @@ class RecommendationMeta(BaseModel):
 
 
 class RecommendationResponse(BaseModel):
+    recommendation_id: str | None = None
     summary: str
     items: list[RecommendationItem] = Field(default_factory=list)
     rejected: list[RejectedItem] = Field(default_factory=list)

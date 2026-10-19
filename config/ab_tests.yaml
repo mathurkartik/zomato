@@ -1,0 +1,11 @@
+experiments:
+  llm_reranking_test:
+    enabled: true
+    variants:
+      control: {weight: 50, flags: {llm_reranking: false}}
+      treatment: {weight: 50, flags: {llm_reranking: true}}
+  chain_cap_test:
+    enabled: false
+    variants:
+      no_cap: {weight: 50, flags: {chain_diversity_cap: false}}
+      with_cap: {weight: 50, flags: {chain_diversity_cap: true}}

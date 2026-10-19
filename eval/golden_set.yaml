@@ -1,0 +1,94 @@
+test_cases:
+  - query: "butter chicken under 800 near Indiranagar"
+    expected_cuisine: "North Indian"
+    expected_locality: "indiranagar"
+    expected_budget_max: 800
+    expected_min_results: 3
+    should_not_contain_chains_over: 2
+
+  - query: "date night in Koramangala"
+    expected_scenario: "date_night"
+    expected_min_rating: 4.0
+    expected_locality: "koramangala 5th block"
+
+  - query: "cheap biryani in BTM Layout"
+    expected_cuisine: "Biryani"
+    expected_locality: "btm"
+    expected_scenario: "budget_eating"
+    expected_min_results: 1
+
+  - query: "pizza under 500 in Whitefield"
+    expected_cuisine: "Italian"
+    expected_locality: "whitefield"
+    expected_budget_max: 500
+    expected_min_results: 1
+
+  - query: "family dinner North Indian in JP Nagar"
+    expected_cuisine: "North Indian"
+    expected_locality: "jp nagar"
+    expected_scenario: "family_dinner"
+    expected_min_results: 1
+
+  - query: "quick lunch Chinese near Marathahalli"
+    expected_cuisine: "Chinese"
+    expected_locality: "marathahalli"
+    expected_scenario: "quick_bite"
+    expected_min_results: 1
+
+  - query: "South Indian under 400 near Jayanagar"
+    expected_cuisine: "South Indian"
+    expected_locality: "jayanagar"
+    expected_budget_max: 400
+    expected_min_results: 2
+
+  - query: "explore new places in HSR Layout"
+    expected_locality: "hsr"
+    expected_scenario: "food_exploration"
+
+  - query: "group hangout in Indiranagar under 1000"
+    expected_locality: "indiranagar"
+    expected_scenario: "group_hangout"
+    expected_budget_max: 1000
+
+  - query: "romantic dinner Italian in Koramangala"
+    expected_cuisine: "Italian"
+    expected_scenario: "date_night"
+    expected_min_rating: 4.0
+
+  - query: "dosa near Basavanagudi"
+    expected_cuisine: "South Indian"
+    expected_locality: "basavanagudi"
+    expected_min_results: 1
+
+  - query: "Continental food under 1500 in MG Road"
+    expected_cuisine: "Continental"
+    expected_budget_max: 1500
+    expected_min_results: 1
+
+  - query: "affordable North Indian in Electronic City"
+    expected_cuisine: "North Indian"
+    expected_locality: "electronic city"
+    expected_scenario: "budget_eating"
+
+  - query: "Mughlai under 600 near Frazer Town"
+    expected_cuisine: "Mughlai"
+    expected_locality: "frazer town"
+    expected_budget_max: 600
+
+  - query: "fast food near Bannerghatta Road"
+    expected_locality: "bannerghatta road"
+    expected_scenario: "quick_bite"
+    expected_min_results: 1
+
+  - query: "Andhra meals under 300 in BTM"
+    expected_cuisine: "Andhra"
+    expected_locality: "btm"
+    expected_budget_max: 300
+
+  - query: "kids friendly restaurant in Whitefield"
+    expected_locality: "whitefield"
+    expected_scenario: "family_dinner"
+
+  - query: "North Indian budget meal in Koramangala"
+    expected_cuisine: "North Indian"
+    expected_scenario: "budget_eating"
